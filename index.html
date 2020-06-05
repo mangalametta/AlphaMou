@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <meta name="Description" content="Enter your description here" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css"
+        />
+        <script src="aMou.js"></script>
+        <title>Alpha Mou</title>
+    </head>
+    <body>
+        <nav class="navbar navbar-light bg-light">
+            <span class="navbar-brand mb-0 h1">Alpha Mou</span>
+        </nav>
+        <div class="container">
+            <div class="row">
+                <div class="col-12" style="height: 100px;"></div>
+                <div class="col-6">
+                    <div id="board" style="text-align: center;"></div>
+                    <div style="text-align: center;">
+                        <div
+                            class="btn-group btn-group-lg"
+                            role="group"
+                            aria-label="First group"
+                        >
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                onclick="disableSetPosi();"
+                            >
+                                調整盤面
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                onclick="enableSetPosi();"
+                            >
+                                設定起始點
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                onclick="resetBoard();"
+                            >
+                                隨機重置盤面
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                onclick="calcPath();"
+                            >
+                                計算路徑
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div id="final_board" style="text-align: center;"></div>
+                    <div style="text-align: center;">
+                        <div
+                            class="btn-group btn-group-lg"
+                            role="group"
+                            aria-label="First group"
+                        >
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                onclick="runPath();"
+                            >
+                                執行路徑
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                onclick="runResult();"
+                            >
+                                消珠模擬
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <!--
+                        show info
+                    -->
+                </div>
+            </div>
+        </div>
+        <script>
+            function sleep(time) {
+                return new Promise((resolve) => setTimeout(resolve, time));
+            }
+            var elem = document.getElementById('board');
+            var finalElem = document.getElementById('final_board');
+            var board = new Board(elem);
+            board.render();
+            var ai = new AlphaMou(board, finalElem);
+            var path = undefined;
+
+            function calcPath() {
+                path = ai.findPath();
+                ai._board.renderPath(path);
+            }
+
+            function runPath() {
+                ai._finalBoard.render();
+                sleep(1000).then(() => {
+                    ai._finalBoard.runPath(path);
+                });
+            }
+
+            function enableSetPosi() {
+                board.state = 'set';
+            }
+
+            function disableSetPosi() {
+                board.state = 'switch';
+            }
+
+            function runResult() {
+                ai._finalBoard.renderResult();
+            }
+
+            function resetBoard() {
+                board = new Board(elem);
+                ai = new AlphaMou(board, finalElem);
+                board.render();
+            }
+        </script>
+    </body>
+</html>
