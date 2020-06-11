@@ -137,6 +137,7 @@
             var elem = document.getElementById('board');
             var finalElem = document.getElementById('final_board');
             var board = new Board(elem);
+            var pathRun = false;
             board.render();
             var ai = new AlphaMou(board, finalElem);
             var path = undefined;
@@ -154,6 +155,7 @@
                 ai._finalBoard.render();
                 sleep(1000).then(() => {
                     ai._finalBoard.runPath(path);
+                    pathRun = true;
                 });
             }
 
@@ -172,6 +174,10 @@
             }
 
             function runResult() {
+                if (!pathRun) {
+                    alert('請先執行路徑');
+                    return;
+                }
                 let infoElem = document.getElementById('info');
                 ai._finalBoard.renderResult();
                 ai._finalBoard.isRenderDone().then(() => {
@@ -183,6 +189,7 @@
 
             function resetBoard() {
                 path = undefined;
+                pathRun = false;
                 board = new Board(elem);
                 ai = new AlphaMou(board, finalElem);
                 board.render();
