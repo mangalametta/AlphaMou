@@ -91,6 +91,7 @@ var Board = function (elem = undefined, board = undefined) {
                     alert('起始點設定成功');
                     break;
                 default:
+                    alert('Board click state is disable now!');
                     break;
             }
         },
@@ -104,9 +105,10 @@ var Board = function (elem = undefined, board = undefined) {
     this.score = undefined;
     this.posi = [0, 0];
     this.findCombo = [];
+    this._renderDone = false;
 
     // for control
-    this.state = 'switch';
+    this.state = 'disable';
 
     // init stone pic
     this._imgs = [
@@ -364,7 +366,7 @@ var Board = function (elem = undefined, board = undefined) {
         drawImg(ctx, x, y, this._imgs[board[x][y]]());
     };
 
-    this._animePath = function (path, i, duration = 500) {
+    this._animePath = function (path, i, duration = 300) {
         const ts = 10, // millisec of one draw
             times = duration / ts;
         let ctx = this._canvas.getContext('2d');
@@ -421,38 +423,58 @@ var Board = function (elem = undefined, board = undefined) {
         }, ts);
     };
 
+    this._testMoveAxis = function (posi1, posi2) {
+        // moving x axis return 0 otherwise 1
+        return Math.round(posi1[0]) != Math.round(posi2[0]) ? 0 : 1;
+    };
+
     this.renderPath = function (path) {
+        this.state = 'disable';
         var ctx = this._canvas.getContext('2d');
         ctx.globalCompositeOperation = 'source-over';
         ctx.beginPath();
         ctx.arc(path[0][0] * 50 + 25, path[0][1] * 50 + 25, 10, 0, 2 * Math.PI);
         ctx.fillStyle = 'green';
         ctx.fill();
+
+        ctx.beginPath();
+        const base = 25;
+        // clone path for solving overlap
+        let newPath = new Array(path.length);
+        for (let i = 0; i < path.length; ++i) {
+            newPath[i] = [path[i][0], path[i][1]];
+        }
+        // planing path to avoid overlap
+        for (let i = 0; i < newPath.length - 1; ++i) {
+            let offset = (Math.random() * 1) / 2 - 1 / 4;
+            let variAxis = this._testMoveAxis(path[i], path[i + 1]);
+            newPath[i + 1][1 - variAxis] = newPath[i][1 - variAxis];
+            newPath[i + 1][variAxis] += offset;
+        }
+        ctx.moveTo(
+            Math.round(newPath[0][0] * 50 + base),
+            Math.round(newPath[0][1] * 50 + base)
+        );
+        for (let i = 0; i < path.length - 1; ++i) {
+            ctx.lineTo(
+                newPath[i + 1][0] * 50 + base,
+                newPath[i + 1][1] * 50 + base
+            );
+        }
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(
-            path[path.length - 1][0] * 50 + 25,
-            path[path.length - 1][1] * 50 + 25,
+            newPath[path.length - 1][0] * 50 + 25,
+            newPath[path.length - 1][1] * 50 + 25,
             10,
             0,
             2 * Math.PI
         );
         ctx.fillStyle = 'green';
         ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(path[0][0] * 50 + 25, path[0][1] * 50 + 25);
-        for (let i = 0; i < path.length - 1; ++i)
-            ctx.lineTo(path[i + 1][0] * 50 + 25, path[i + 1][1] * 50 + 25);
-
-        let grad = ctx.createLinearGradient(50, 50, 150, 150);
-        grad.addColorStop(0, 'black');
-        grad.addColorStop(1, 'white');
-
-        ctx.strokeStyle = grad;
-
-        ctx.lineWidth = 5;
         ctx.stroke();
     };
 
@@ -563,9 +585,23 @@ var Board = function (elem = undefined, board = undefined) {
     this.renderResult = function () {
         // make combo to blanks
         let combos = this.dropDown();
-        if (combos.length == 0) return;
+        this._renderDone = false;
+        if (combos.length == 0) {
+            this._renderDone = true;
+            return;
+        }
         this.findCombo = this.findCombo.concat(combos);
         this._animeFadingCombo(combos, 0, 500);
+    };
+
+    this.isRenderDone = async function () {
+        let thisOfBoard = this;
+        return new Promise(function (resolve) {
+            (function waitRender() {
+                if (thisOfBoard._renderDone) return resolve();
+                setTimeout(waitRender, 30);
+            })();
+        });
     };
 };
 
@@ -577,6 +613,7 @@ var AlphaMou = function (board, elem) {
     this._enableSkew = false;
     this._dirs = 8;
     this._finalBoard = new Board(elem, board._cloneBoard());
+    this.state = 'combo';
 
     if (!this._enableSkew) this._dirs = 4;
 
@@ -620,7 +657,13 @@ var AlphaMou = function (board, elem) {
         let copyBoard = new Board(undefined, board1._cloneBoard());
         let combos = this._simulateTillEnd(copyBoard);
         // in the situation that have same combos shorter moves is desirable
-        return combos.length; //+ copyBoard.getBlankNum(); // * 50 - board1.moves;
+
+        // high combo orient
+        if (this.state == 'combo') return combos.length - board1.moves * 0.1;
+
+        //clean orient
+        if (this.state == 'clean')
+            return copyBoard.getBlankNum() - board1.moves * 0.3;
     };
 
     this._popBoardQue = function (boardQue) {
@@ -635,7 +678,7 @@ var AlphaMou = function (board, elem) {
         return popBoard;
     };
 
-    this.findPath = function (queBound = 5000) {
+    this.findPath = function (queBound = 4000) {
         // find a path to approximate the best estimation
         // best first search with moves restriction
         // starting point can be specifyed (default from 0,0)

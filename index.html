@@ -22,7 +22,13 @@
         </nav>
         <div class="container">
             <div class="row">
-                <div class="col-12" style="height: 100px;"></div>
+                <div class="col-12 mt-3 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            為了練習JS而寫的小Project，可以計算出轉珠路徑，並把盤面狀況以動畫的形式模擬出來。
+                        </div>
+                    </div>
+                </div>
                 <div class="col-6">
                     <div id="board" style="text-align: center;"></div>
                     <div style="text-align: center;">
@@ -52,6 +58,35 @@
                             >
                                 隨機重置盤面
                             </button>
+                            <div class="btn-group" role="group">
+                                <button
+                                    id="btnGroupDrop1"
+                                    type="button"
+                                    class="btn btn-secondary dropdown-toggle"
+                                    data-toggle="dropdown"
+                                    aria-haspopup="true"
+                                    aria-expanded="false"
+                                >
+                                    模式設定
+                                </button>
+                                <div
+                                    class="dropdown-menu"
+                                    aria-labelledby="btnGroupDrop1"
+                                >
+                                    <a
+                                        class="dropdown-item"
+                                        href="#"
+                                        onclick="changeAiState('combo');"
+                                        >Combo越多越好</a
+                                    >
+                                    <a
+                                        class="dropdown-item"
+                                        href="#"
+                                        onclick="changeAiState('clean');"
+                                        >盤面越乾淨越好</a
+                                    >
+                                </div>
+                            </div>
                             <button
                                 type="button"
                                 class="btn btn-secondary"
@@ -87,10 +122,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12">
-                    <!--
-                        show info
-                    -->
+                <div class="col-12 mt-3 mb-3">
+                    <div class="card">
+                        <div class="card-body" id="info"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,6 +133,7 @@
             function sleep(time) {
                 return new Promise((resolve) => setTimeout(resolve, time));
             }
+
             var elem = document.getElementById('board');
             var finalElem = document.getElementById('final_board');
             var board = new Board(elem);
@@ -111,29 +147,64 @@
             }
 
             function runPath() {
+                if (path === undefined) {
+                    alert('請先計算路徑!');
+                    return;
+                }
                 ai._finalBoard.render();
                 sleep(1000).then(() => {
                     ai._finalBoard.runPath(path);
                 });
             }
 
+            function changeAiState(mode) {
+                ai.state = mode;
+            }
+
             function enableSetPosi() {
+                alert('切換成設定起始點模式');
                 board.state = 'set';
             }
 
             function disableSetPosi() {
+                alert('切換成調整盤面模式');
                 board.state = 'switch';
             }
 
             function runResult() {
+                let infoElem = document.getElementById('info');
                 ai._finalBoard.renderResult();
+                ai._finalBoard.isRenderDone().then(() => {
+                    infoElem.innerText = `${
+                        ai._finalBoard.findCombo.length
+                    } Combo, 共消了 ${ai._finalBoard.getBlankNum()} 顆珠。`;
+                });
             }
 
             function resetBoard() {
+                path = undefined;
                 board = new Board(elem);
                 ai = new AlphaMou(board, finalElem);
                 board.render();
+
+                let infoElem = document.getElementById('info');
+                infoElem.innerText = '';
             }
         </script>
+        <script
+            src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+            integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+            integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+            crossorigin="anonymous"
+        ></script>
     </body>
 </html>
